@@ -95,7 +95,18 @@ async function run() {
             const result = await usersCollection.find().toArray()
             res.send(result)
         })
+        // Update user role by ID for (ManageUsers page) and store it in the DB 
+        app.patch('/users/role/:id', async (req, res) => {
+            const id = req.params.id
+            const { role } = req.body
 
+            const result = await usersCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { role } }
+            )
+
+            res.send(result)
+        })
 
 
         // Send a ping to confirm a successful connection
