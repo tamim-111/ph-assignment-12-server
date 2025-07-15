@@ -120,7 +120,7 @@ async function run() {
             const result = await medicinesCollection.find().toArray()
             res.send(result)
         })
-        // Store selected medicine and update quantity in DB
+        // Store selected medicine and update quantity and store in DB
         app.post('/cart', async (req, res) => {
             const medicine = req.body
             const { _id, ...cartItem } = medicine // remove _id from medicine for cart
