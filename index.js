@@ -114,7 +114,11 @@ async function run() {
             const result = await medicinesCollection.insertOne(newMedicine)
             res.send(result)
         })
-
+        // GET all medicines from the DB
+        app.get('/medicines', async (req, res) => {
+            const result = await medicinesCollection.find().toArray()
+            res.send(result)
+        })
 
 
 
