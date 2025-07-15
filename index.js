@@ -46,6 +46,7 @@ async function run() {
     const db = client.db('MedEasyDB')
     const usersCollection = db.collection('users')
     const medicinesCollection = db.collection('medicines')
+    const cartsCollection = db.collection('carts')
     try {
         // Generate jwt token
         app.post('/jwt', async (req, res) => {
@@ -118,6 +119,37 @@ async function run() {
         app.get('/medicines', async (req, res) => {
             const result = await medicinesCollection.find().toArray()
             res.send(result)
+        })
+        // Store selected medicine and update quantity in DB
+        app.post('/cart', async (req, res) => {
+            const medicine = req.body
+            const { _id, ...cartItem } = medicine // remove _id from medicine for cart
+
+            const existingCart = await cartsCollection.findOne({ medicineId: _id })
+
+            if (existingCart) {
+                // Already in cart -> increase quantity
+                const updateCart = await cartsCollection.updateOne(
+                    { medicineId: _id },
+                    { $inc: { quantity: 1 } }
+                )
+            } else {
+                // New cart item
+                const newCartItem = {
+                    ...cartItem,
+                    medicineId: _id,
+                    quantity: 1,
+                }
+                await cartsCollection.insertOne(newCartItem)
+            }
+
+            // Decrease stock in medicines collection
+            const updateStock = await medicinesCollection.updateOne(
+                { _id: new ObjectId(_id) },
+                { $inc: { stock: -1 } }
+            )
+
+            res.send({ success: true })
         })
 
 
