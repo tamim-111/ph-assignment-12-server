@@ -43,6 +43,8 @@ const client = new MongoClient(process.env.MONGODB_URI, {
     },
 })
 async function run() {
+    const db = client.db('MedEasyDB')
+    const usersCollection = db.collection('users')
     try {
         // Generate jwt token
         app.post('/jwt', async (req, res) => {
@@ -72,6 +74,23 @@ async function run() {
                 res.status(500).send(err)
             }
         })
+
+
+        // save user data in the DB
+        app.post('/user', async (req, res) => {
+            const { name, email, role } = req.body
+            if (!email) return res.status(400).send({ message: 'Email required' })
+
+            const existingUser = await usersCollection.findOne({ email })
+
+            if (existingUser) {
+                return res.status(200).send({ message: 'User already exists' })
+            }
+
+            const result = await usersCollection.insertOne({ name, email, role })
+            res.send(result)
+        })
+
 
         // Send a ping to confirm a successful connection
         await client.db('admin').command({ ping: 1 })
