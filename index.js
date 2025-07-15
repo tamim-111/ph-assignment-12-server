@@ -90,6 +90,12 @@ async function run() {
             const result = await usersCollection.insertOne({ name, email, role })
             res.send(result)
         })
+        // get all users form DB
+        app.get('/users', async (req, res) => {
+            const result = await usersCollection.find().toArray()
+            res.send(result)
+        })
+
 
 
         // Send a ping to confirm a successful connection
