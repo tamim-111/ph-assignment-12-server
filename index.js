@@ -45,6 +45,7 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 async function run() {
     const db = client.db('MedEasyDB')
     const usersCollection = db.collection('users')
+    const medicinesCollection = db.collection('medicines')
     try {
         // Generate jwt token
         app.post('/jwt', async (req, res) => {
@@ -107,6 +108,14 @@ async function run() {
 
             res.send(result)
         })
+        // send medicine data in the DB for (ManageMedicines page)
+        app.post('/medicines', async (req, res) => {
+            const newMedicine = req.body
+            const result = await medicinesCollection.insertOne(newMedicine)
+            res.send(result)
+        })
+
+
 
 
         // Send a ping to confirm a successful connection
