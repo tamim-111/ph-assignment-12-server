@@ -279,6 +279,16 @@ async function run() {
 
             res.send({ clientSecret: paymentIntent.client_secret });
         });
+        // Save payment after success (status = pending)
+        app.post('/payments', async (req, res) => {
+            const paymentData = req.body
+            const result = await paymentsCollection.insertOne(paymentData)
+            // clear the user's cart after successful payment
+            await cartsCollection.deleteMany({ userEmail: paymentData?.userEmail })
+            // Clear the user's checkout collection
+            await checkoutCollection.deleteMany({ userEmail: paymentData?.userEmail });
+            res.send(result)
+        })
 
 
 
