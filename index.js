@@ -201,6 +201,19 @@ async function run() {
             )
             res.send(result)
         })
+        // update the request property
+        app.patch('/medicines/request/:id', async (req, res) => {
+            const id = req.params.id
+            try {
+                const result = await medicinesCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { requested: true } }
+                )
+                res.send(result)
+            } catch (err) {
+                res.status(500).send({ message: 'Failed to update requested field', error: err.message })
+            }
+        })
 
 
 
