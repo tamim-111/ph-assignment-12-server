@@ -48,6 +48,7 @@ async function run() {
     const medicinesCollection = db.collection('medicines')
     const cartsCollection = db.collection('carts')
     const checkoutCollection = db.collection('checkout');
+    const categoriesCollection = db.collection('categories')
     try {
         // Generate jwt token
         app.post('/jwt', async (req, res) => {
@@ -170,6 +171,37 @@ async function run() {
             const result = await checkoutCollection.insertOne(checkoutData)
             res.send(result)
         })
+        // 1. Create category (POST /categories)
+        app.post('/categories', async (req, res) => {
+            const newCategory = req.body
+            const result = await categoriesCollection.insertOne(newCategory)
+            res.send(result)
+        })
+
+        // 2. Get all categories (GET /categories)
+        app.get('/categories', async (req, res) => {
+            const result = await categoriesCollection.find().toArray()
+            res.send(result)
+        })
+
+        // 3. Delete category (DELETE /categories/:id)
+        app.delete('/categories/:id', async (req, res) => {
+            const id = req.params.id
+            const result = await categoriesCollection.deleteOne({ _id: new ObjectId(id) })
+            res.send(result)
+        })
+
+        // 4. Update category (PATCH /categories/:id)
+        app.patch('/categories/:id', async (req, res) => {
+            const id = req.params.id
+            const updatedData = req.body
+            const result = await categoriesCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: updatedData }
+            )
+            res.send(result)
+        })
+
 
 
 
