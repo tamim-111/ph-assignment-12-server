@@ -141,6 +141,20 @@ async function run() {
             const result = await cartsCollection.find().toArray()
             res.send(result)
         })
+        // Update quantity and subtotal of a cart item
+        app.patch('/carts/:id', async (req, res) => {
+            const id = req.params.id
+            const { quantity, stock, subtotal } = req.body
+
+            const result = await cartsCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { quantity, stock, subtotal } }
+            )
+
+            res.send(result)
+        })
+
+
 
 
 
