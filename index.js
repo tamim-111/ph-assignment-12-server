@@ -129,6 +129,11 @@ async function run() {
             const result = await cartsCollection.insertOne(cartItem)
             res.send(result)
         })
+        // get all the cats data form the db
+        app.get('/carts', async (req, res) => {
+            const result = await cartsCollection.find().toArray()
+            res.send(result)
+        })
 
 
 
