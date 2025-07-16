@@ -236,6 +236,15 @@ async function run() {
                 res.status(500).send({ message: 'Failed to update advertised field', error: err.message })
             }
         })
+        // get only advertised medicines
+        app.get('/medicines/advertised', async (req, res) => {
+            try {
+                const result = await medicinesCollection.find({ advertised: true }).toArray()
+                res.send(result)
+            } catch (err) {
+                res.status(500).send({ message: 'Failed to fetch advertised medicines', error: err.message })
+            }
+        })
 
 
 
