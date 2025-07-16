@@ -47,6 +47,7 @@ async function run() {
     const usersCollection = db.collection('users')
     const medicinesCollection = db.collection('medicines')
     const cartsCollection = db.collection('carts')
+    const checkoutCollection = db.collection('checkout');
     try {
         // Generate jwt token
         app.post('/jwt', async (req, res) => {
@@ -120,9 +121,11 @@ async function run() {
             const result = await medicinesCollection.find().toArray()
             res.send(result)
         })
-        // Store selected medicine in DB
-        app.post('/cart', async (req, res) => {
+        // Save selected medicine data in the db with quantity and subtotal
+        app.post('/carts', async (req, res) => {
             const cartItem = req.body
+            cartItem.quantity = 0
+            cartItem.subtotal = 0
             const result = await cartsCollection.insertOne(cartItem)
             res.send(result)
         })
