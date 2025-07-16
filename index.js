@@ -153,6 +153,12 @@ async function run() {
 
             res.send(result)
         })
+        // Delete a specific cart item
+        app.delete('/carts/:id', async (req, res) => {
+            const id = req.params.id
+            const result = await cartsCollection.deleteOne({ _id: new ObjectId(id) })
+            res.send(result)
+        })
 
 
 
