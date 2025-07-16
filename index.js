@@ -214,6 +214,15 @@ async function run() {
                 res.status(500).send({ message: 'Failed to update requested field', error: err.message })
             }
         })
+        // Get only requested medicines
+        app.get('/medicines/requested', async (req, res) => {
+            try {
+                const result = await medicinesCollection.find({ requested: true }).toArray()
+                res.send(result)
+            } catch (err) {
+                res.status(500).send({ message: 'Failed to fetch requested medicines', error: err.message })
+            }
+        })
 
 
 
