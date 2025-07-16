@@ -164,7 +164,12 @@ async function run() {
             const result = await cartsCollection.deleteMany({})
             res.send(result)
         })
-
+        // Save checkout data with items and grand total
+        app.post('/checkout', async (req, res) => {
+            const checkoutData = req.body
+            const result = await checkoutCollection.insertOne(checkoutData)
+            res.send(result)
+        })
 
 
 
