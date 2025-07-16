@@ -223,6 +223,19 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch requested medicines', error: err.message })
             }
         })
+        // Update 'advertised' to true
+        app.patch('/medicines/advertise/:id', async (req, res) => {
+            const id = req.params.id
+            try {
+                const result = await medicinesCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { advertised: true } }
+                )
+                res.send(result)
+            } catch (err) {
+                res.status(500).send({ message: 'Failed to update advertised field', error: err.message })
+            }
+        })
 
 
 
