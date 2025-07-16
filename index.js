@@ -126,6 +126,13 @@ async function run() {
             const cartItem = req.body
             cartItem.quantity = 0
             cartItem.subtotal = 0
+
+            // Prevent duplication by checking for medicineId
+            const existing = await cartsCollection.findOne({ medicineId: cartItem.medicineId })
+            if (existing) {
+                return res.status(409).send({ message: 'Already in cart' }) // conflict status
+            }
+
             const result = await cartsCollection.insertOne(cartItem)
             res.send(result)
         })
