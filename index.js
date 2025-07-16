@@ -245,6 +245,15 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch advertised medicines', error: err.message })
             }
         })
+        // Get only discounted medicines
+        app.get('/medicines/discounted', async (req, res) => {
+            try {
+                const result = await medicinesCollection.find({ discount: { $gt: 0 } }).toArray()
+                res.send(result)
+            } catch (err) {
+                res.status(500).send({ message: 'Failed to fetch discounted medicines', error: err.message })
+            }
+        })
 
 
 
