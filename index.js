@@ -254,6 +254,16 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch discounted medicines', error: err.message })
             }
         })
+        // Get medicines by category
+        app.get('/medicines/category/:category', async (req, res) => {
+            const category = req.params.category;
+            try {
+                const result = await medicinesCollection.find({ category }).toArray();
+                res.send(result);
+            } catch (err) {
+                res.status(500).send({ message: 'Failed to fetch category medicines', error: err.message });
+            }
+        });
 
 
 
