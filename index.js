@@ -4,6 +4,7 @@ const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
+const stripe = require('stripe')(process.env.STRIPE_SK_KEY)
 
 const port = process.env.PORT || 4000
 const app = express()
@@ -49,6 +50,7 @@ async function run() {
     const cartsCollection = db.collection('carts')
     const checkoutCollection = db.collection('checkout');
     const categoriesCollection = db.collection('categories')
+    const paymentsCollection = db.collection('payments')
     try {
         // Generate jwt token
         app.post('/jwt', async (req, res) => {
@@ -264,7 +266,19 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch category medicines', error: err.message });
             }
         });
+        // Stripe payment intent
+        app.post('/create-payment-intent', async (req, res) => {
+            const { amount } = req.body;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: Math.round(amount * 100),
+                currency: 'usd',
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+            });
 
+            res.send({ clientSecret: paymentIntent.client_secret });
+        });
 
 
 
