@@ -249,10 +249,16 @@ async function run() {
         // Update 'advertised' to true
         app.patch('/medicines/advertise/:id', async (req, res) => {
             const id = req.params.id
+            const { advertised } = req.body  // get boolean from client
+
+            if (typeof advertised !== 'boolean') {
+                return res.status(400).send({ message: 'Invalid advertised value' })
+            }
+
             try {
                 const result = await medicinesCollection.updateOne(
                     { _id: new ObjectId(id) },
-                    { $set: { advertised: true } }
+                    { $set: { advertised } }   // use the value from client
                 )
                 res.send(result)
             } catch (err) {
