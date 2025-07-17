@@ -125,17 +125,18 @@ async function run() {
             const result = await medicinesCollection.insertOne(newMedicine)
             res.send(result)
         })
-        // GET all medicines from the DB
+        // GET all medicines OR only seller's medicines
         app.get('/medicines', async (req, res) => {
-            const seller = req.query.seller
+            const seller = req.query.seller;
 
-            if (seller) {
-                const result = await medicinesCollection.find({ seller }).toArray()
-                return res.send(result)
+            try {
+                const filter = seller ? { seller } : {}; // if seller query present, filter by seller
+                const result = await medicinesCollection.find(filter).toArray();
+                res.send(result);
+            } catch (err) {
+                res.status(500).send({ message: 'Failed to fetch medicines', error: err.message });
             }
-
-            res.status(403).send({ message: 'Forbidden: seller email required' })
-        })
+        });
         // Save selected medicine data in the db with quantity and subtotal
         app.post('/carts', async (req, res) => {
             const cartItem = req.body
