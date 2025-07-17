@@ -127,8 +127,14 @@ async function run() {
         })
         // GET all medicines from the DB
         app.get('/medicines', async (req, res) => {
-            const result = await medicinesCollection.find().toArray()
-            res.send(result)
+            const seller = req.query.seller
+
+            if (seller) {
+                const result = await medicinesCollection.find({ seller }).toArray()
+                return res.send(result)
+            }
+
+            res.status(403).send({ message: 'Forbidden: seller email required' })
         })
         // Save selected medicine data in the db with quantity and subtotal
         app.post('/carts', async (req, res) => {
