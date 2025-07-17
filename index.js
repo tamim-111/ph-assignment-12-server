@@ -145,7 +145,11 @@ async function run() {
         })
         // get all the cats data form the db
         app.get('/carts', async (req, res) => {
-            const result = await cartsCollection.find().toArray()
+            const userEmail = req.query?.email
+            if (!userEmail) {
+                return res.status(400).send({ message: 'Missing user email' })
+            }
+            const result = await cartsCollection.find({ userEmail }).toArray()
             res.send(result)
         })
         // Update quantity and subtotal of a cart item
