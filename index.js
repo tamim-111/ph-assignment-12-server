@@ -309,10 +309,16 @@ async function run() {
             await checkoutCollection.deleteMany({ userEmail: paymentData?.userEmail });
             res.send(result)
         })
-        // Get all payment information
+        // Get all payment information (filtered by email)
         app.get('/payments', async (req, res) => {
+            const userEmail = req.query.email
+
+            if (!userEmail) {
+                return res.status(400).send({ message: 'User email is required' })
+            }
+
             try {
-                const result = await paymentsCollection.find().toArray()
+                const result = await paymentsCollection.find({ userEmail }).toArray()
                 res.send(result)
             } catch (err) {
                 res.status(500).send({ message: 'Failed to fetch payments', error: err.message })
