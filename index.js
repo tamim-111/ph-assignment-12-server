@@ -98,8 +98,11 @@ async function run() {
         })
         // get all users form DB
         app.get('/users', async (req, res) => {
-            const result = await usersCollection.find().toArray()
-            res.send(result)
+            const email = req.query.email
+            if (!email) return res.status(400).send({ message: 'Email is required' })
+
+            const user = await usersCollection.findOne({ email })
+            res.send(user)
         })
         // Update user role by ID for (ManageUsers page) and store it in the DB 
         app.patch('/users/role/:id', async (req, res) => {
