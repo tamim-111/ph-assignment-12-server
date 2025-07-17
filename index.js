@@ -306,7 +306,26 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch payments', error: err.message })
             }
         })
+        // Update payment status to 'paid'
+        app.patch('/payments/:id', async (req, res) => {
+            const id = req.params.id
+            const { status } = req.body
 
+            try {
+                const result = await paymentsCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { status } }
+                )
+
+                if (result.modifiedCount > 0) {
+                    res.send({ success: true, message: 'Payment status updated' })
+                } else {
+                    res.status(404).send({ success: false, message: 'Payment not found or already updated' })
+                }
+            } catch (err) {
+                res.status(500).send({ success: false, message: 'Failed to update payment', error: err.message })
+            }
+        })
 
 
         // Send a ping to confirm a successful connection
