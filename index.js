@@ -127,13 +127,17 @@ async function run() {
         // Save selected medicine data in the db with quantity and subtotal
         app.post('/carts', async (req, res) => {
             const cartItem = req.body
+
+            if (!cartItem.userEmail) {
+                return res.status(400).send({ message: 'userEmail is required' })
+            }
+
             cartItem.quantity = 0
             cartItem.subtotal = 0
 
-            // Prevent duplication by checking for medicineId
-            const existing = await cartsCollection.findOne({ medicineId: cartItem.medicineId })
+            const existing = await cartsCollection.findOne({ medicineId: cartItem.medicineId, userEmail: cartItem.userEmail })
             if (existing) {
-                return res.status(409).send({ message: 'Already in cart' }) // conflict status
+                return res.status(409).send({ message: 'Already in cart' })
             }
 
             const result = await cartsCollection.insertOne(cartItem)
