@@ -89,22 +89,6 @@ async function run() {
 
             res.send({ token })
         })
-        // Logout
-        app.get('/logout', async (req, res) => {
-            try {
-                res
-                    .clearCookie('token', {
-                        maxAge: 0,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                    })
-                    .send({ success: true })
-            } catch (err) {
-                res.status(500).send(err)
-            }
-        })
-
-
         // save user data in the DB
         app.post('/user', async (req, res) => {
             const { name, email, role } = req.body
@@ -149,7 +133,7 @@ async function run() {
             res.send(result)
         })
         // GET all medicines OR only seller's medicines
-        app.get('/medicines', verifyToken, verifySeller, async (req, res) => {
+        app.get('/medicines', async (req, res) => {
             const seller = req.query.seller;
 
             try {
