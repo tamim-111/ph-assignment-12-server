@@ -20,15 +20,15 @@ app.use(express.json())
 app.use(cookieParser())
 
 const verifyToken = async (req, res, next) => {
-    const token = req.cookies?.token
-
-    if (!token) {
-        return res.status(401).send({ message: 'unauthorized access' })
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).send({ message: 'Unauthorized access' })
     }
+
+    const token = authHeader.split(' ')[1]
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if (err) {
-            console.log(err)
-            return res.status(401).send({ message: 'unauthorized access' })
+            return res.status(403).send({ message: 'Forbidden access' })
         }
         req.user = decoded
         next()
@@ -52,19 +52,42 @@ async function run() {
     const categoriesCollection = db.collection('categories')
     const paymentsCollection = db.collection('payments')
     try {
-        // Generate jwt token
+        const verifyAdmin = async (req, res, next) => {
+            const email = req?.user?.email
+            const user = await usersCollection.findOne({
+                email,
+            })
+            console.log(user?.role)
+            if (!user || user?.role !== 'admin')
+                return res
+                    .status(403)
+                    .send({ message: 'Admin only Actions!', role: user?.role })
+
+            next()
+        }
+
+        const verifySeller = async (req, res, next) => {
+            const email = req?.user?.email
+            const user = await usersCollection.findOne({
+                email,
+            })
+            console.log(user?.role)
+            if (!user || user?.role !== 'seller')
+                return res
+                    .status(403)
+                    .send({ message: 'Seller only Actions!', role: user?.role })
+
+            next()
+        }
         app.post('/jwt', async (req, res) => {
-            const email = req.body
-            const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
+            const email = req.body.email
+            if (!email) return res.status(400).send({ message: 'Email is required' })
+
+            const token = jwt.sign({ email }, process.env.ACCESS_TOKEN_SECRET, {
                 expiresIn: '365d',
             })
-            res
-                .cookie('token', token, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                })
-                .send({ success: true })
+
+            res.send({ token })
         })
         // Logout
         app.get('/logout', async (req, res) => {
@@ -97,7 +120,7 @@ async function run() {
             res.send(result)
         })
         // get all users form DB
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyAdmin, async (req, res) => {
             const email = req.query.email
             if (email) {
                 const user = await usersCollection.findOne({ email })
@@ -108,7 +131,7 @@ async function run() {
             res.send(users)
         })
         // Update user role by ID for (ManageUsers page) and store it in the DB 
-        app.patch('/users/role/:id', async (req, res) => {
+        app.patch('/users/role/:id', verifyAdmin, async (req, res) => {
             const id = req.params.id
             const { role } = req.body
 
@@ -120,13 +143,13 @@ async function run() {
             res.send(result)
         })
         // send medicine data in the DB for (ManageMedicines page)
-        app.post('/medicines', async (req, res) => {
+        app.post('/medicines', verifyToken, verifySeller, async (req, res) => {
             const newMedicine = req.body
             const result = await medicinesCollection.insertOne(newMedicine)
             res.send(result)
         })
         // GET all medicines OR only seller's medicines
-        app.get('/medicines', async (req, res) => {
+        app.get('/medicines', verifyToken, verifySeller, async (req, res) => {
             const seller = req.query.seller;
 
             try {
@@ -138,7 +161,7 @@ async function run() {
             }
         });
         // Save selected medicine data in the db with quantity and subtotal
-        app.post('/carts', async (req, res) => {
+        app.post('/carts', verifyToken, async (req, res) => {
             const cartItem = req.body
 
             if (!cartItem.userEmail) {
@@ -157,7 +180,7 @@ async function run() {
             res.send(result)
         })
         // get all the cats data form the db
-        app.get('/carts', async (req, res) => {
+        app.get('/carts', verifyToken, async (req, res) => {
             const userEmail = req.query?.email
             if (!userEmail) {
                 return res.status(400).send({ message: 'Missing user email' })
@@ -166,7 +189,7 @@ async function run() {
             res.send(result)
         })
         // Update quantity and subtotal of a cart item
-        app.patch('/carts/:id', async (req, res) => {
+        app.patch('/carts/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const { quantity, stock, subtotal } = req.body
 
@@ -178,24 +201,24 @@ async function run() {
             res.send(result)
         })
         // Delete a specific cart item
-        app.delete('/carts/:id', async (req, res) => {
+        app.delete('/carts/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const result = await cartsCollection.deleteOne({ _id: new ObjectId(id) })
             res.send(result)
         })
         // Clear all cart items
-        app.delete('/carts', async (req, res) => {
+        app.delete('/carts', verifyToken, async (req, res) => {
             const result = await cartsCollection.deleteMany({})
             res.send(result)
         })
         // Save checkout data with items and grand total
-        app.post('/checkout', async (req, res) => {
+        app.post('/checkout', verifyToken, async (req, res) => {
             const checkoutData = req.body
             const result = await checkoutCollection.insertOne(checkoutData)
             res.send(result)
         })
         // 1. Create category (POST /categories)
-        app.post('/categories', async (req, res) => {
+        app.post('/categories', verifyToken, verifySeller, async (req, res) => {
             const newCategory = req.body
             const result = await categoriesCollection.insertOne(newCategory)
             res.send(result)
@@ -208,14 +231,14 @@ async function run() {
         })
 
         // 3. Delete category (DELETE /categories/:id)
-        app.delete('/categories/:id', async (req, res) => {
+        app.delete('/categories/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id
             const result = await categoriesCollection.deleteOne({ _id: new ObjectId(id) })
             res.send(result)
         })
 
         // 4. Update category (PATCH /categories/:id)
-        app.patch('/categories/:id', async (req, res) => {
+        app.patch('/categories/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id
             const updatedData = req.body
             const result = await categoriesCollection.updateOne(
@@ -225,7 +248,7 @@ async function run() {
             res.send(result)
         })
         // update the request property
-        app.patch('/medicines/request/:id', async (req, res) => {
+        app.patch('/medicines/request/:id', verifyToken, verifySeller, async (req, res) => {
             const id = req.params.id
             try {
                 const result = await medicinesCollection.updateOne(
@@ -238,7 +261,7 @@ async function run() {
             }
         })
         // Get only requested medicines
-        app.get('/medicines/requested', async (req, res) => {
+        app.get('/medicines/requested', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const result = await medicinesCollection.find({ requested: true }).toArray()
                 res.send(result)
@@ -247,7 +270,7 @@ async function run() {
             }
         })
         // Update 'advertised' to true
-        app.patch('/medicines/advertise/:id', async (req, res) => {
+        app.patch('/medicines/advertise/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id
             const { advertised } = req.body  // get boolean from client
 
@@ -307,7 +330,7 @@ async function run() {
             res.send({ clientSecret: paymentIntent.client_secret });
         });
         // Save payment after success (status = pending)
-        app.post('/payments', async (req, res) => {
+        app.post('/payments', verifyToken, async (req, res) => {
             const paymentData = req.body
             const result = await paymentsCollection.insertOne(paymentData)
             // clear the user's cart after successful payment
@@ -317,7 +340,7 @@ async function run() {
             res.send(result)
         })
         // Get all payment information (filtered by email)
-        app.get('/payments', async (req, res) => {
+        app.get('/payments', verifyToken, verifyAdmin, async (req, res) => {
             const email = req.query.email
             const type = req.query.type // 'seller', 'buyer', or undefined for admin
 
@@ -342,7 +365,7 @@ async function run() {
         })
 
         // Update payment status to 'paid'
-        app.patch('/payments/:id', async (req, res) => {
+        app.patch('/payments/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id
             const { status } = req.body
 
