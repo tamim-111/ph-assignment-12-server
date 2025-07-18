@@ -318,16 +318,29 @@ async function run() {
         })
         // Get all payment information (filtered by email)
         app.get('/payments', async (req, res) => {
-            const userEmail = req.query.email
-            const filter = userEmail ? { userEmail } : {}
+            const email = req.query.email
+            const type = req.query.type // 'seller', 'buyer', or undefined for admin
 
             try {
-                const result = await paymentsCollection.find(filter).toArray()
+                let result = []
+
+                if (email && type === 'seller') {
+                    // Seller view
+                    result = await paymentsCollection.find({ 'items.seller': email }).toArray()
+                } else if (email && type === 'buyer') {
+                    // Buyer view
+                    result = await paymentsCollection.find({ userEmail: email }).toArray()
+                } else {
+                    // Admin view - get all
+                    result = await paymentsCollection.find().toArray()
+                }
+
                 res.send(result)
             } catch (err) {
                 res.status(500).send({ message: 'Failed to fetch payments', error: err.message })
             }
         })
+
         // Update payment status to 'paid'
         app.patch('/payments/:id', async (req, res) => {
             const id = req.params.id
