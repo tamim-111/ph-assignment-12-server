@@ -107,7 +107,7 @@ async function run() {
             res.send(result)
         })
         // get all users data form the DB
-        app.get('/users', verifyAdmin, async (req, res) => {
+        app.get('/users', verifyToken, async (req, res) => {
             const email = req.query.email
             if (email) {
                 const user = await usersCollection.findOne({ email })
@@ -118,7 +118,7 @@ async function run() {
             res.send(users)
         })
         // Update user role by ID and store it in the DB 
-        app.patch('/users/role/:id', verifyAdmin, async (req, res) => {
+        app.patch('/users/role/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id
             const { role } = req.body
 
@@ -129,26 +129,6 @@ async function run() {
 
             res.send(result)
         })
-
-
-
-        // save medicine data in the DB
-        app.post('/medicines', verifyToken, verifySeller, async (req, res) => {
-            const newMedicine = req.body
-            const result = await medicinesCollection.insertOne(newMedicine)
-            res.send(result)
-        })
-        // get medicines data form the db
-        app.get('/medicines', async (req, res) => {
-            const seller = req.query.seller;
-            try {
-                const filter = seller ? { seller } : {};
-                const result = await medicinesCollection.find(filter).toArray();
-                res.send(result);
-            } catch (err) {
-                res.status(500).send({ message: 'Failed to fetch medicines', error: err.message });
-            }
-        });
 
 
 
@@ -216,7 +196,7 @@ async function run() {
 
 
         // save categories data in the db
-        app.post('/categories', verifyToken, verifySeller, async (req, res) => {
+        app.post('/categories', verifyToken, verifyAdmin, async (req, res) => {
             const newCategory = req.body
             const result = await categoriesCollection.insertOne(newCategory)
             res.send(result)
@@ -244,9 +224,25 @@ async function run() {
         })
 
 
-
-        // update the requested property in medicines collection form the db
-        app.patch('/medicines/request/:id', verifyToken, verifySeller, async (req, res) => {
+        // save medicine data in the DB
+        app.post('/medicines', verifyToken, verifySeller, async (req, res) => {
+            const newMedicine = req.body
+            const result = await medicinesCollection.insertOne(newMedicine)
+            res.send(result)
+        })
+        // get medicines data form the db
+        app.get('/medicines', async (req, res) => {
+            const seller = req.query.seller;
+            try {
+                const filter = seller ? { seller } : {};
+                const result = await medicinesCollection.find(filter).toArray();
+                res.send(result);
+            } catch (err) {
+                res.status(500).send({ message: 'Failed to fetch medicines', error: err.message });
+            }
+        });
+        // update requested = true form the db
+        app.patch('/medicines/request/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             try {
                 const result = await medicinesCollection.updateOne(
@@ -340,8 +336,8 @@ async function run() {
 
             res.send(result)
         })
-        // Get all user role based payment data in the db
-        app.get('/payments', verifyToken, verifyAdmin, async (req, res) => {
+        // Get all user role based on email in the db
+        app.get('/payments', verifyToken, async (req, res) => {
             const email = req.query.email
             const type = req.query.type
 
