@@ -65,7 +65,6 @@ async function run() {
 
             next()
         }
-
         const verifySeller = async (req, res, next) => {
             const email = req?.user?.email
             const user = await usersCollection.findOne({
@@ -79,6 +78,7 @@ async function run() {
 
             next()
         }
+        // generate JWT token
         app.post('/jwt', async (req, res) => {
             const email = req.body.email
             if (!email) return res.status(400).send({ message: 'Email is required' })
@@ -89,6 +89,9 @@ async function run() {
 
             res.send({ token })
         })
+
+
+
         // save user data in the DB
         app.post('/user', async (req, res) => {
             const { name, email, role } = req.body
@@ -103,7 +106,7 @@ async function run() {
             const result = await usersCollection.insertOne({ name, email, role })
             res.send(result)
         })
-        // get all users form DB
+        // get all users data form the DB
         app.get('/users', verifyAdmin, async (req, res) => {
             const email = req.query.email
             if (email) {
@@ -114,7 +117,7 @@ async function run() {
             const users = await usersCollection.find().toArray()
             res.send(users)
         })
-        // Update user role by ID for (ManageUsers page) and store it in the DB 
+        // Update user role by ID and store it in the DB 
         app.patch('/users/role/:id', verifyAdmin, async (req, res) => {
             const id = req.params.id
             const { role } = req.body
@@ -126,25 +129,30 @@ async function run() {
 
             res.send(result)
         })
-        // send medicine data in the DB for (ManageMedicines page)
+
+
+
+        // save medicine data in the DB
         app.post('/medicines', verifyToken, verifySeller, async (req, res) => {
             const newMedicine = req.body
             const result = await medicinesCollection.insertOne(newMedicine)
             res.send(result)
         })
-        // GET all medicines OR only seller's medicines
+        // get medicines data form the db
         app.get('/medicines', async (req, res) => {
             const seller = req.query.seller;
-
             try {
-                const filter = seller ? { seller } : {}; // if seller query present, filter by seller
+                const filter = seller ? { seller } : {};
                 const result = await medicinesCollection.find(filter).toArray();
                 res.send(result);
             } catch (err) {
                 res.status(500).send({ message: 'Failed to fetch medicines', error: err.message });
             }
         });
-        // Save selected medicine data in the db with quantity and subtotal
+
+
+
+        // save medicine data in the db with quantity and subtotal
         app.post('/carts', verifyToken, async (req, res) => {
             const cartItem = req.body
 
@@ -172,7 +180,7 @@ async function run() {
             const result = await cartsCollection.find({ userEmail }).toArray()
             res.send(result)
         })
-        // Update quantity and subtotal of a cart item
+        // Update quantity , stock, and subtotal properties and store it in the db
         app.patch('/carts/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const { quantity, stock, subtotal } = req.body
@@ -184,44 +192,47 @@ async function run() {
 
             res.send(result)
         })
-        // Delete a specific cart item
+        // delete specific cart data in the db
         app.delete('/carts/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const result = await cartsCollection.deleteOne({ _id: new ObjectId(id) })
             res.send(result)
         })
-        // Clear all cart items
+        // delete all carts data in the db
         app.delete('/carts', verifyToken, async (req, res) => {
             const result = await cartsCollection.deleteMany({})
             res.send(result)
         })
-        // Save checkout data with items and grand total
+
+
+
+        // save checkout data in the db
         app.post('/checkout', verifyToken, async (req, res) => {
             const checkoutData = req.body
             const result = await checkoutCollection.insertOne(checkoutData)
             res.send(result)
         })
-        // 1. Create category (POST /categories)
+
+
+
+        // save categories data in the db
         app.post('/categories', verifyToken, verifySeller, async (req, res) => {
             const newCategory = req.body
             const result = await categoriesCollection.insertOne(newCategory)
             res.send(result)
         })
-
-        // 2. Get all categories (GET /categories)
+        // get all categories data in the db
         app.get('/categories', async (req, res) => {
             const result = await categoriesCollection.find().toArray()
             res.send(result)
         })
-
-        // 3. Delete category (DELETE /categories/:id)
+        // 3. delete a specific category data in the db
         app.delete('/categories/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id
             const result = await categoriesCollection.deleteOne({ _id: new ObjectId(id) })
             res.send(result)
         })
-
-        // 4. Update category (PATCH /categories/:id)
+        // 4. Update a specific category data in the db
         app.patch('/categories/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id
             const updatedData = req.body
@@ -231,7 +242,10 @@ async function run() {
             )
             res.send(result)
         })
-        // update the request property
+
+
+
+        // update the requested property in medicines collection form the db
         app.patch('/medicines/request/:id', verifyToken, verifySeller, async (req, res) => {
             const id = req.params.id
             try {
@@ -244,7 +258,7 @@ async function run() {
                 res.status(500).send({ message: 'Failed to update requested field', error: err.message })
             }
         })
-        // Get only requested medicines
+        // get all requested medicines form the db
         app.get('/medicines/requested', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const result = await medicinesCollection.find({ requested: true }).toArray()
@@ -253,10 +267,10 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch requested medicines', error: err.message })
             }
         })
-        // Update 'advertised' to true
+        // update advertise properties true in the db
         app.patch('/medicines/advertise/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id
-            const { advertised } = req.body  // get boolean from client
+            const { advertised } = req.body
 
             if (typeof advertised !== 'boolean') {
                 return res.status(400).send({ message: 'Invalid advertised value' })
@@ -265,14 +279,14 @@ async function run() {
             try {
                 const result = await medicinesCollection.updateOne(
                     { _id: new ObjectId(id) },
-                    { $set: { advertised } }   // use the value from client
+                    { $set: { advertised } }
                 )
                 res.send(result)
             } catch (err) {
                 res.status(500).send({ message: 'Failed to update advertised field', error: err.message })
             }
         })
-        // get only advertised medicines
+        // get all advertised medicines in the db
         app.get('/medicines/advertised', async (req, res) => {
             try {
                 const result = await medicinesCollection.find({ advertised: true }).toArray()
@@ -281,7 +295,7 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch advertised medicines', error: err.message })
             }
         })
-        // Get only discounted medicines
+        // get all discounted medicines in the db
         app.get('/medicines/discounted', async (req, res) => {
             try {
                 const result = await medicinesCollection.find({ discount: { $gt: 0 } }).toArray()
@@ -290,7 +304,7 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch discounted medicines', error: err.message })
             }
         })
-        // Get medicines by category
+        // get all medicines by category in the db
         app.get('/medicines/category/:category', async (req, res) => {
             const category = req.params.category;
             try {
@@ -300,7 +314,10 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch category medicines', error: err.message });
             }
         });
-        // Stripe payment intent
+
+
+
+        // create stripe payment intent
         app.post('/create-payment-intent', async (req, res) => {
             const { amount } = req.body;
             const paymentIntent = await stripe.paymentIntents.create({
@@ -313,32 +330,29 @@ async function run() {
 
             res.send({ clientSecret: paymentIntent.client_secret });
         });
-        // Save payment after success (status = pending)
+        // save payments data in the db
         app.post('/payments', verifyToken, async (req, res) => {
             const paymentData = req.body
             const result = await paymentsCollection.insertOne(paymentData)
-            // clear the user's cart after successful payment
+
             await cartsCollection.deleteMany({ userEmail: paymentData?.userEmail })
-            // Clear the user's checkout collection
             await checkoutCollection.deleteMany({ userEmail: paymentData?.userEmail });
+
             res.send(result)
         })
-        // Get all payment information (filtered by email)
+        // Get all user role based payment data in the db
         app.get('/payments', verifyToken, verifyAdmin, async (req, res) => {
             const email = req.query.email
-            const type = req.query.type // 'seller', 'buyer', or undefined for admin
+            const type = req.query.type
 
             try {
                 let result = []
 
                 if (email && type === 'seller') {
-                    // Seller view
                     result = await paymentsCollection.find({ 'items.seller': email }).toArray()
                 } else if (email && type === 'buyer') {
-                    // Buyer view
                     result = await paymentsCollection.find({ userEmail: email }).toArray()
                 } else {
-                    // Admin view - get all
                     result = await paymentsCollection.find().toArray()
                 }
 
@@ -348,7 +362,7 @@ async function run() {
             }
         })
 
-        // Update payment status to 'paid'
+        // update payment status and store it in the db
         app.patch('/payments/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id
             const { status } = req.body
@@ -368,6 +382,7 @@ async function run() {
                 res.status(500).send({ success: false, message: 'Failed to update payment', error: err.message })
             }
         })
+
 
 
         // Send a ping to confirm a successful connection
